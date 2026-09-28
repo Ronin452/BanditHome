@@ -15,7 +15,9 @@ if not TOKEN:
     raise RuntimeError("BOT_TOKEN не задан")
 
 
-# ---------- БАЗА ДАННЫХ ----------
+# =========================
+# БАЗА ДАННЫХ
+# =========================
 
 def init_db():
     conn = sqlite3.connect("bandit.db")
@@ -64,10 +66,13 @@ def get_user(user_id):
     """, (user_id,)).fetchone()
 
     conn.close()
+
     return user
 
 
-# ---------- КЛАВИАТУРА ----------
+# =========================
+# ГЛАВНОЕ МЕНЮ
+# =========================
 
 def main_keyboard():
     keyboard = [
@@ -92,7 +97,15 @@ def main_keyboard():
     return InlineKeyboardMarkup(keyboard)
 
 
-# ---------- /START ----------
+def back_button():
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("🔙 Назад", callback_data="home")]
+    ])
+
+
+# =========================
+# /START
+# =========================
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
@@ -117,10 +130,13 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 
-# ---------- КНОПКИ ----------
+# =========================
+# КНОПКИ
+# =========================
 
 async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
+
     await query.answer()
 
     user_id = query.from_user.id
@@ -128,7 +144,15 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     user = get_user(user_id)
 
+    # Если пользователь ещё не существует
+    if user is None:
+        add_user(query.from_user)
+        user = get_user(user_id)
+
+    # ---------- ПРОФИЛЬ ----------
+
     if data == "profile":
+
         coins, level, xp, wins, streak = user
 
         text = (
@@ -144,24 +168,26 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text(
             text,
             parse_mode="HTML",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("🔙 Назад", callback_data="home")]
-            ])
+            reply_markup=back_button()
         )
 
+    # ---------- БАЛАНС ----------
+
     elif data == "balance":
+
         coins = user[0]
 
         await query.edit_message_text(
-            f"💰 <b>ТВОЙ БАЛАНС</b>\n\n"
+            "💰 <b>ТВОЙ БАЛАНС</b>\n\n"
             f"🪙 Монеты: <b>{coins}</b>",
             parse_mode="HTML",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("🔙 Назад", callback_data="home")]
-            ])
+            reply_markup=back_button()
         )
 
+    # ---------- ИГРЫ ----------
+
     elif data == "games":
+
         await query.edit_message_text(
             "🎮 <b>ИГРЫ</b>\n\n"
             "Скоро здесь появятся игры:\n\n"
@@ -171,62 +197,68 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "⚡ Дуэли\n"
             "🎯 Угадай число",
             parse_mode="HTML",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("🔙 Назад", callback_data="home")]
-            ])
+            reply_markup=back_button()
         )
 
+    # ---------- РЕЙТИНГ ----------
+
     elif data == "rating":
+
         await query.edit_message_text(
             "🏆 <b>РЕЙТИНГ</b>\n\n"
             "🥇 Скоро здесь появятся лучшие игроки Bandit Home!",
             parse_mode="HTML",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("🔙 Назад", callback_data="home")]
-            ])
+            reply_markup=back_button()
         )
 
+    # ---------- БОНУС ----------
+
     elif data == "bonus":
+
         await query.edit_message_text(
             "🎁 <b>ЕЖЕДНЕВНЫЙ БОНУС</b>\n\n"
             "Система ежедневных бонусов скоро будет доступна.",
             parse_mode="HTML",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("🔙 Назад", callback_data="home")]
-            ])
+            reply_markup=back_button()
         )
 
+    # ---------- МАГАЗИН ----------
+
     elif data == "shop":
+
         await query.edit_message_text(
             "🛒 <b>МАГАЗИН</b>\n\n"
             "Здесь будут продаваться предметы, VIP и другие улучшения.",
             parse_mode="HTML",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("🔙 Назад", callback_data="home")]
-            ])
+            reply_markup=back_button()
         )
 
+    # ---------- ДОНАТ ----------
+
     elif data == "donate":
+
         await query.edit_message_text(
             "💎 <b>ДОНАТ</b>\n\n"
             "Скоро здесь появится система доната за Telegram Stars ⭐",
             parse_mode="HTML",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("🔙 Назад", callback_data="home")]
-            ])
+            reply_markup=back_button()
         )
 
+    # ---------- НАСТРОЙКИ ----------
+
     elif data == "settings":
+
         await query.edit_message_text(
             "⚙️ <b>НАСТРОЙКИ</b>\n\n"
             "Настройки Bandit Home появятся здесь.",
             parse_mode="HTML",
-            reply_markup=InlineKeyboardMarkup([
-                [InlineKeyboardButton("🔙 Назад", callback_data="home")]
-            ])
+            reply_markup=back_button()
         )
 
+    # ---------- ДОМОЙ ----------
+
     elif data == "home":
+
         await query.edit_message_text(
             "🏠 <b>BANDIT HOME</b>\n\n"
             "Выбери нужный раздел 👇",
@@ -235,9 +267,12 @@ async def buttons(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 
-# ---------- ЗАПУСК ----------
+# =========================
+# ЗАПУСК
+# =========================
 
 def main():
+
     init_db()
 
     app = Application.builder().token(TOKEN).build()
